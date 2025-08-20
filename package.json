@@ -1,0 +1,41 @@
+{
+    "name": "go-playground-mcp",
+    "version": "0.1.0",
+    "description": "MCP server for Go Playground integration",
+    "main": "dist/index.js",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "dev": "tsx src/index.ts",
+        "clean": "rm -rf dist",
+        "test": "tsx src/test-example.ts",
+        "lint": "eslint src/ --ext .ts,.tsx",
+        "lint:fix": "eslint src/ --ext .ts,.tsx --fix",
+        "type-check": "tsc --noEmit",
+        "format": "prettier --write src/",
+        "format:check": "prettier --check src/",
+        "prepare": "npm run build"
+    },
+    "keywords": [
+        "mcp",
+        "go",
+        "playground",
+        "typescript"
+    ],
+    "author": "Samuel Berthe <dev@samuel-berthe.fr>",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.17.3",
+        "axios": "^1.6.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "typescript": "^5.0.0",
+        "tsx": "^4.0.0",
+        "@typescript-eslint/eslint-plugin": "^6.0.0",
+        "@typescript-eslint/parser": "^6.0.0",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0"
+    }
+}

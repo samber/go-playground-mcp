@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "go-playground": {
+            "command": "npx",
+            "args": [
+                "go-playground-mcp"
+            ]
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "env": {
+        "es2022": true,
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        // Basic TypeScript rules
+        "@typescript-eslint/no-unused-vars": "error",
+        "@typescript-eslint/no-explicit-any": "warn",
+        // Code quality
+        "prefer-const": "error",
+        "no-var": "error",
+        "no-console": "off",
+        "no-debugger": "error",
+        // Functional programming preferences
+        "prefer-arrow-callback": "error",
+        "arrow-spacing": "error",
+        "prefer-rest-params": "error",
+        "prefer-spread": "error",
+        "prefer-template": "error"
+    },
+    "ignorePatterns": [
+        "dist/",
+        "node_modules/",
+        "*.js"
+    ]
+}
