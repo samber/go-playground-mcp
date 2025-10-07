@@ -13,6 +13,7 @@ import {
   createShareUrl,
   validateGoCode,
   processEvents,
+  isGoPlaygroundUrl,
 } from './types.js';
 
 // Configuration with defaults
@@ -243,7 +244,94 @@ export const createGoPlaygroundClient = (
   runCode: runGoCode(config),
   shareCode: shareGoCode(config),
   runAndShare: runAndShareGoCode(config),
+  readUrl: readGoPlaygroundUrl(config),
+  executeUrl: executeGoPlaygroundUrl(config),
 });
+
+// Function to read code from playground URL
+export const readGoPlaygroundUrl =
+  (config: Partial<GoPlaygroundConfig> = {}) =>
+  async (url: string): Promise<{ success: true; code: string } | { success: false; error: string }> => {
+    // Validate URL
+    if (!isGoPlaygroundUrl(url)) {
+      return {
+        success: false,
+        error: 'Invalid Go Playground URL. Expected format: https://go.dev/play/xyz or https://play.golang.org/p/xyz',
+      };
+    }
+
+    const finalConfig = { ...createDefaultConfig(), ...config };
+    const client = createHttpClient(finalConfig);
+
+    try {
+      // Extract share ID from URL
+      let shareId: string | null = null;
+      if (url.includes('go.dev/play/')) {
+        // Handles both go.dev/play/<id> and go.dev/play/p/<id>
+        const after = url.split('go.dev/play/')[1];
+        const parts = after.split('/').filter(Boolean);
+        if (parts.length === 1) {
+          shareId = parts[0];
+        } else if (parts.length >= 2 && parts[0] === 'p') {
+          shareId = parts[1];
+        }
+      } else if (url.includes('play.golang.org/p/')) {
+        shareId = url.split('play.golang.org/p/')[1].split('/')[0];
+      }
+
+      if (!shareId) {
+        return {
+          success: false,
+          error: 'Invalid Go Playground URL format',
+        };
+      }
+
+      // Fetch the code from the playground
+      const response = await client.get(`/p/${shareId}.go`);
+
+      if (response.status !== 200) {
+        return {
+          success: false,
+          error: `Failed to fetch code: HTTP ${response.status}`,
+        };
+      }
+
+      return {
+        success: true,
+        code: response.data,
+      };
+    } catch (error) {
+      console.error('Failed to read playground URL:', error);
+      if (isAxiosError(error)) {
+        return {
+          success: false,
+          error: `Network error: ${error.message}`,
+        };
+      }
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  };
+
+// Function to execute code from playground URL
+export const executeGoPlaygroundUrl =
+  (config: Partial<GoPlaygroundConfig> = {}) =>
+  async (url: string, withVet: boolean = true): Promise<MCPGoPlaygroundResult> => {
+    // First read the code from the URL
+    const readResult = await readGoPlaygroundUrl(config)(url);
+    if (!readResult.success) {
+      return {
+        success: false,
+        errors: readResult.error,
+      };
+    }
+
+    // Then execute the code
+    const runCode = runGoCode(config);
+    return await runCode(readResult.code, withVet);
+  };
 
 // Default client for backward compatibility
 export const defaultGoPlaygroundClient = createGoPlaygroundClient();
@@ -253,4 +341,6 @@ export {
   runGoCode as run,
   shareGoCode as share,
   runAndShareGoCode as runAndShare,
+  readGoPlaygroundUrl as read,
+  executeGoPlaygroundUrl as execute,
 };
