@@ -45,8 +45,8 @@ func main() {
 
     // Test sharing code with branded types
     console.log('\n2. Sharing code...');
-    const shareUrl = await client.shareCode(testCode);
-    console.log('Share URL:', shareUrl ?? 'Failed to generate');
+    const initialShareUrl = await client.shareCode(testCode);
+    console.log('Share URL:', initialShareUrl ?? 'Failed to generate');
 
     // Test run and share with discriminated union handling
     console.log('\n3. Running and sharing code...');
@@ -89,6 +89,45 @@ func main() {
           `${result.errors.substring(0, 100)}...`
         );
       }
+    }
+
+    // Test reading from playground URL
+    console.log('\n6. Testing URL reading functionality...');
+    // First share some code to get a valid URL
+    const shareUrl = await client.shareCode(testCode);
+    if (shareUrl) {
+      console.log('Testing with shared URL:', shareUrl);
+      const readResult = await client.readUrl(shareUrl);
+      if (readResult.success) {
+        console.log('✅ Successfully read code from URL:', {
+          codeLength: readResult.code.length,
+          firstLine: readResult.code.split('\n')[0],
+        });
+      } else {
+        console.log('❌ Failed to read from URL:', readResult.error);
+      }
+
+      // Test executing from playground URL
+      console.log('\n7. Testing URL execution functionality...');
+      const executeResult = await client.executeUrl(shareUrl);
+      if (executeResult.success) {
+        console.log('✅ Successfully executed code from URL:', {
+          output: executeResult.output,
+          exitCode: executeResult.exitCode,
+        });
+      } else {
+        console.log('❌ Failed to execute from URL:', executeResult.errors);
+      }
+    } else {
+      console.log('❌ Failed to create share URL for testing');
+    }
+
+    // Test invalid URL
+    console.log('\n8. Testing invalid URL handling...');
+    const invalidUrl = 'https://example.com/invalid';
+    const invalidReadResult = await client.readUrl(invalidUrl);
+    if (!invalidReadResult.success) {
+      console.log('✅ Correctly handled invalid URL:', invalidReadResult.error);
     }
   } catch (error) {
     console.error('Test failed:', error);

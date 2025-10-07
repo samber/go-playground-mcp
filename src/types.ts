@@ -81,11 +81,29 @@ export type RunAndShareGoCodeArgs = {
   readonly withVet?: boolean;
 };
 
+// URL types for playground operations
+export type GoPlaygroundUrl = string & { readonly __brand: 'GoPlaygroundUrl' };
+
+// Utility function for playground URL type
+export const createGoPlaygroundUrl = (url: string): GoPlaygroundUrl => url as GoPlaygroundUrl;
+
+// New tool argument types
+export type ReadGoPlaygroundUrlArgs = {
+  readonly url: GoPlaygroundUrl;
+};
+
+export type ExecuteGoPlaygroundUrlArgs = {
+  readonly url: GoPlaygroundUrl;
+  readonly withVet?: boolean;
+};
+
 // Tool names as const assertion with mapped types
 export const TOOL_NAMES = {
   RUN_GO_CODE: 'run_go_code',
   SHARE_GO_CODE: 'share_go_code',
   RUN_AND_SHARE_GO_CODE: 'run_and_share_go_code',
+  READ_GO_PLAYGROUND_URL: 'read_go_playground_url',
+  EXECUTE_GO_PLAYGROUND_URL: 'execute_go_playground_url',
 } as const;
 
 export type ToolName = (typeof TOOL_NAMES)[keyof typeof TOOL_NAMES];
@@ -167,6 +185,46 @@ export const isRunAndShareGoCodeArgs = (
     args !== null &&
     'code' in args &&
     isGoCode((args as Record<string, unknown>).code) &&
+    (!('withVet' in args) ||
+      typeof (args as Record<string, unknown>).withVet === 'boolean')
+  );
+};
+
+// URL validation utility
+export const isGoPlaygroundUrl = (value: unknown): value is GoPlaygroundUrl => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return false;
+  }
+
+  // Accept both go.dev/play and play.golang.org URLs
+  const validPatterns = [
+    // go.dev variants: https://go.dev/play/<id> or https://go.dev/play/p/<id>
+    /^https:\/\/go\.dev\/play\/[a-zA-Z0-9_-]+$/,
+    /^https:\/\/go\.dev\/play\/p\/[a-zA-Z0-9_-]+$/,
+    // legacy domain: https://play.golang.org/p/<id>
+    /^https:\/\/play\.golang\.org\/p\/[a-zA-Z0-9_-]+$/
+  ];
+
+  return validPatterns.some(pattern => pattern.test(value.trim()));
+};
+
+export const isReadGoPlaygroundUrlArgs = (args: unknown): args is ReadGoPlaygroundUrlArgs => {
+  return (
+    typeof args === 'object' &&
+    args !== null &&
+    'url' in args &&
+    isGoPlaygroundUrl((args as Record<string, unknown>).url)
+  );
+};
+
+export const isExecuteGoPlaygroundUrlArgs = (
+  args: unknown
+): args is ExecuteGoPlaygroundUrlArgs => {
+  return (
+    typeof args === 'object' &&
+    args !== null &&
+    'url' in args &&
+    isGoPlaygroundUrl((args as Record<string, unknown>).url) &&
     (!('withVet' in args) ||
       typeof (args as Record<string, unknown>).withVet === 'boolean')
   );

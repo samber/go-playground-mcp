@@ -10,6 +10,8 @@ import {
   type RunGoCodeArgs,
   type ShareGoCodeArgs,
   type RunAndShareGoCodeArgs,
+  type ReadGoPlaygroundUrlArgs,
+  type ExecuteGoPlaygroundUrlArgs,
   type MCPGoPlaygroundResult,
   type MCPGoPlaygroundSuccess,
   type MCPGoPlaygroundFailure,
@@ -21,6 +23,8 @@ import {
   isRunGoCodeArgs,
   isShareGoCodeArgs,
   isRunAndShareGoCodeArgs,
+  isReadGoPlaygroundUrlArgs,
+  isExecuteGoPlaygroundUrlArgs,
   assertNever,
   createGoPlaygroundError,
 } from './types.js';
@@ -94,6 +98,39 @@ const createToolDefinitions = (): readonly Tool[] =>
           },
         },
         required: ['code'],
+      },
+    },
+    {
+      name: TOOL_NAMES.READ_GO_PLAYGROUND_URL,
+      description: 'Read Go code from an existing Go Playground URL',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url: {
+            type: 'string',
+            description: 'The Go Playground URL to read code from (e.g., https://go.dev/play/abc123 or https://play.golang.org/p/abc123)',
+          },
+        },
+        required: ['url'],
+      },
+    },
+    {
+      name: TOOL_NAMES.EXECUTE_GO_PLAYGROUND_URL,
+      description: 'Execute Go code from an existing Go Playground URL',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url: {
+            type: 'string',
+            description: 'The Go Playground URL to execute code from (e.g., https://go.dev/play/abc123 or https://play.golang.org/p/abc123)',
+          },
+          withVet: {
+            type: 'boolean',
+            description: 'Whether to run go vet on the code (default: true)',
+            default: true,
+          },
+        },
+        required: ['url'],
       },
     },
   ] as const;
@@ -222,6 +259,40 @@ const createRunAndShareGoCodeHandler =
     }
   };
 
+const createReadGoPlaygroundUrlHandler =
+  (client: ReturnType<typeof createGoPlaygroundClient>) =>
+  async (args: ReadGoPlaygroundUrlArgs): Promise<MCPToolResponse> => {
+    try {
+      const { url } = args;
+      const result = await client.readUrl(url);
+
+      if (!result.success) {
+        const responseText = `❌ Failed to read code from playground URL.\n\n**Error:** ${result.error}`;
+        return createSuccessResponse(responseText);
+      }
+
+      const responseText = `✅ Successfully read code from playground URL!\n\n**Code:**\n\`\`\`go\n${result.code}\n\`\`\``;
+      return createSuccessResponse(responseText);
+    } catch (error) {
+      console.error('Error in handleReadGoPlaygroundUrl:', error);
+      return createErrorResponse(error);
+    }
+  };
+
+const createExecuteGoPlaygroundUrlHandler =
+  (client: ReturnType<typeof createGoPlaygroundClient>) =>
+  async (args: ExecuteGoPlaygroundUrlArgs): Promise<MCPToolResponse> => {
+    try {
+      const { url, withVet = true } = args;
+      const result = await client.executeUrl(url, withVet);
+      const responseText = formatRunResponse(result);
+      return createSuccessResponse(responseText);
+    } catch (error) {
+      console.error('Error in handleExecuteGoPlaygroundUrl:', error);
+      return createErrorResponse(error);
+    }
+  };
+
 // Tool routing function
 const createToolRouter = (
   client: ReturnType<typeof createGoPlaygroundClient>
@@ -230,6 +301,8 @@ const createToolRouter = (
     [TOOL_NAMES.RUN_GO_CODE]: createRunGoCodeHandler(client),
     [TOOL_NAMES.SHARE_GO_CODE]: createShareGoCodeHandler(client),
     [TOOL_NAMES.RUN_AND_SHARE_GO_CODE]: createRunAndShareGoCodeHandler(client),
+    [TOOL_NAMES.READ_GO_PLAYGROUND_URL]: createReadGoPlaygroundUrlHandler(client),
+    [TOOL_NAMES.EXECUTE_GO_PLAYGROUND_URL]: createExecuteGoPlaygroundUrlHandler(client),
   } as const;
 
   return async (
@@ -271,6 +344,30 @@ const createToolRouter = (
           );
         }
         return await handlers[TOOL_NAMES.RUN_AND_SHARE_GO_CODE](args);
+      }
+
+      case TOOL_NAMES.READ_GO_PLAYGROUND_URL: {
+        if (!isReadGoPlaygroundUrlArgs(args)) {
+          return createErrorResponse(
+            createGoPlaygroundError(
+              'Invalid arguments for read_go_playground_url',
+              GoPlaygroundErrorCode.VALIDATION_ERROR
+            )
+          );
+        }
+        return await handlers[TOOL_NAMES.READ_GO_PLAYGROUND_URL](args);
+      }
+
+      case TOOL_NAMES.EXECUTE_GO_PLAYGROUND_URL: {
+        if (!isExecuteGoPlaygroundUrlArgs(args)) {
+          return createErrorResponse(
+            createGoPlaygroundError(
+              'Invalid arguments for execute_go_playground_url',
+              GoPlaygroundErrorCode.VALIDATION_ERROR
+            )
+          );
+        }
+        return await handlers[TOOL_NAMES.EXECUTE_GO_PLAYGROUND_URL](args);
       }
 
       default:
