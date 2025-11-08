@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that integrates with the Go Playground API to execute Go code and generate shareable URLs.
 
+<a href="https://glama.ai/mcp/servers/@samber/go-playground-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@samber/go-playground-mcp/badge" alt="Go Playground Server MCP server" />
+</a>
+
 [![tag](https://img.shields.io/github/tag/samber/go-playground-mcp.svg)](https://github.com/samber/go-playground-mcp/releases)
 ![Build Status](https://github.com/samber/go-playground-mcp/actions/workflows/test.yml/badge.svg)
 [![Coverage](https://img.shields.io/codecov/c/github/samber/go-playground-mcp)](https://codecov.io/gh/samber/go-playground-mcp)
